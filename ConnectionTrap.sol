@@ -7,7 +7,7 @@ interface ITrap {
 }
 
 contract ConnectionTrap is ITrap {
-    address public constant target = 0x219Bb3aC626B48DCcc62b2bBdD4eCc66A3561E53;
+    address public constant target = 0x219Bb3aC626B48DCcc62b2bBdD4eCc66A3561E53; //changeble address
 
     struct CollectOutput {
         uint256 balance;
