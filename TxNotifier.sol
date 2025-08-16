@@ -1,14 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @title TxNotifier — логгер событий о новых транзакциях
 contract TxNotifier {
-    /// @notice Событие для фиксации новой транзакции
-    event NewTransactionDetected(string message);
+    event NewTransactionDetected(
+        address indexed target,
+        uint256 newBalance,
+        uint256 oldBalance,
+        string direction
+    );
 
-    /// @notice Логирование сигнала от ловушки
-    /// @param message сообщение от ловушки
-    function notifyTransaction(string calldata message) external {
-        emit NewTransactionDetected(message);
+
+    /// @param target
+    /// @param newBalance
+    /// @param oldBalance
+    /// @param direction ("Incoming"/"Outgoing")
+    function notifyTransaction(
+        address target,
+        uint256 newBalance,
+        uint256 oldBalance,
+        string calldata direction
+    ) external {
+        emit NewTransactionDetected(target, newBalance, oldBalance, direction);
     }
 }
