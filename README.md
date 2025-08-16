@@ -25,36 +25,45 @@ interface ITrap {
 }
 
 contract ConnectionTrap is ITrap {
-    address public constant target = 0x219Bb3aC626B48DCcc62b2bBdD4eCc66A3561E53;
+    /// @notice waller address
+    address public immutable target;
 
     struct CollectOutput {
         uint256 balance;
+        uint256 blockNumber;
     }
 
-    /// @notice current balance
+    constructor(address _target) {
+        target = _target;
+    }
+
     function collect() external view override returns (bytes memory) {
         CollectOutput memory o = CollectOutput({
-            balance: target.balance
+            balance: target.balance,
+            blockNumber: block.number
         });
         return abi.encode(o);
     }
 
-    /// @notice new transaction
     function shouldRespond(bytes[] calldata data) external pure override returns (bool, bytes memory) {
         if (data.length < 2) {
             return (false, abi.encode("No history"));
         }
 
-        CollectOutput memory prev = abi.decode(data[0], (CollectOutput));
-        CollectOutput memory curr = abi.decode(data[1], (CollectOutput));
+        // Drosera передаёт: [latest, ..., older]
+        CollectOutput memory curr = abi.decode(data[0], (CollectOutput)); // latest
+        CollectOutput memory prev = abi.decode(data[1], (CollectOutput)); // older
 
-        if (curr.balance != prev.balance) {
-            return (true, abi.encode("New transaction affecting balance detected"));
+        if (curr.balance > prev.balance) {
+            return (true, abi.encode(curr.balance, prev.balance, "Incoming ETH detected"));
+        } else if (curr.balance < prev.balance) {
+            return (true, abi.encode(curr.balance, prev.balance, "Outgoing ETH detected"));
         }
 
         return (false, abi.encode(""));
     }
 }
+
 ```
 ## Response Contract: TxNotifier.sol
 ```bash
@@ -62,12 +71,27 @@ contract ConnectionTrap is ITrap {
 pragma solidity ^0.8.20;
 
 contract TxNotifier {
-    event NewTransactionDetected(string message);
+    event NewTransactionDetected(
+        address indexed target,
+        uint256 newBalance,
+        uint256 oldBalance,
+        string direction
+    );
 
-    function notifyTransaction(string calldata message) external {
-        emit NewTransactionDetected(message);
+    /// @param target
+    /// @param newBalance
+    /// @param oldBalance
+    /// @param direction ("Incoming"/"Outgoing")
+    function notifyTransaction(
+        address target,
+        uint256 newBalance,
+        uint256 oldBalance,
+        string calldata direction
+    ) external {
+        emit NewTransactionDetected(target, newBalance, oldBalance, direction);
     }
 }
+
 ```
 
 ## What It Solves
